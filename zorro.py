@@ -20,14 +20,14 @@ import easygui
 # size = np.shape(I)
 
 #Capturing an image from a webcam:
-k = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
+kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
 kernel2 = np.ones((3,3),np.uint8)
 element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
 
 # Tiling is important for correct contrast mappings
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
-video = cv2.VideoCapture("Zorro.mp4")
+video = cv2.VideoCapture("../../Zorro.mp4")
 (grabbed, I) = video.read()
 #I = imutils.resize(I, width=640)
 
@@ -44,7 +44,7 @@ height, width, _ = I.shape
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('ZorroErodedNewOrderUnCropped.wmv',fourcc, 30.0, (854,480))
+out = cv2.VideoWriter('ZorroErodedNewOrderUnCropped2.wmv',fourcc, 30.0, (854,480))
 
 while (video.isOpened()):
 	
@@ -61,6 +61,8 @@ while (video.isOpened()):
 	(grabbed, I) = video.read()
 	
 	
+	
+	
 	# Width is now 638
 	#cropped = I[0:480, 108:746]
 	
@@ -70,9 +72,19 @@ while (video.isOpened()):
 	# WHICH IS SLOWER TO LOAD*************
 	I = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
 	
+	
+	
+	# NEED TO GET THE MASK FROM THE ORIGINAL IMAGE
+	# COMPARE ONE FRAME TO ANOTHER
+	# SOMEHOW
+	# inpaint = cv2.inpaint(img,mask,3,cv2.INPAINT_TELEA)
+	
 	cla = clahe.apply(I)
 	
-	#cv2.imshow("cla", cla)
+	#merge_mertens = cv2.createMergeMertens()
+	#res_mertens = merge_mertens.process(cla)
+	#res_mertens_8bit = np.clip(res_mertens*255, 0, 255).astype('uint8')
+	
 	#cla2 = clahe.apply(F)
 	#I2 = cv2.fastNlMeansDenoisingColored(I,None,5,5,7,21) 
 	
@@ -81,9 +93,9 @@ while (video.isOpened()):
 	
 	# CHANGED THIS FROM DOING A 
 	# BLUR, THEN DENOISE, THEN SHARPENING
-	F2 = cv2.filter2D(cla, ddepth = -1, kernel = k)
-	I2 = cv2.GaussianBlur(F2,(3,3),0)
-	denoised = cv2.fastNlMeansDenoising(I2,None,5,7,21)
+	sharpened = cv2.filter2D(cla, ddepth = -1, kernel = kernelSharp)
+	Gblurred = cv2.GaussianBlur(sharpened,(3,3),0)
+	denoised = cv2.fastNlMeansDenoising(Gblurred,None,5,7,21)
 	
 	
 	#denoised = cv2.fastNlMeansDenoising(I,None,5,7,21)

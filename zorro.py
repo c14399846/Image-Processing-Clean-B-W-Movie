@@ -44,7 +44,7 @@ height, width, _ = I.shape
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('ZorroErodedNewOrderUnCropped2.wmv',fourcc, 30.0, (854,480))
+#out = cv2.VideoWriter('ZorroErodedNewOrderUnCropped2.wmv',fourcc, 30.0, (854,480))
 
 while (video.isOpened()):
 	
@@ -55,8 +55,8 @@ while (video.isOpened()):
 	
 	# Hard sets the frame to frame 114
 	# Nicer for testing purposes
-	#camera.set(1,114)
-	#camera.set(1,103)
+	#video.set(1,114)
+	video.set(1,103)
 	
 	(grabbed, I) = video.read()
 	
@@ -72,6 +72,7 @@ while (video.isOpened()):
 	# WHICH IS SLOWER TO LOAD*************
 	I = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
 	
+	cv2.imshow("gray",I)
 	
 	
 	# NEED TO GET THE MASK FROM THE ORIGINAL IMAGE
@@ -81,6 +82,12 @@ while (video.isOpened()):
 	
 	cla = clahe.apply(I)
 	
+	denoised3 = cv2.fastNlMeansDenoising(I,None,5,7,21)
+	cla2 = clahe.apply(denoised3)
+	cv2.imshow("cla2",cla2)
+	
+	cv2.imshow("cla",cla)
+	
 	#merge_mertens = cv2.createMergeMertens()
 	#res_mertens = merge_mertens.process(cla)
 	#res_mertens_8bit = np.clip(res_mertens*255, 0, 255).astype('uint8')
@@ -88,14 +95,18 @@ while (video.isOpened()):
 	#cla2 = clahe.apply(F)
 	#I2 = cv2.fastNlMeansDenoisingColored(I,None,5,5,7,21) 
 	
-	
-	
+	denoised2 = cv2.fastNlMeansDenoising(cla,None,5,7,21)
+	cv2.imshow("denoised2",denoised2)
 	
 	# CHANGED THIS FROM DOING A 
 	# BLUR, THEN DENOISE, THEN SHARPENING
 	sharpened = cv2.filter2D(cla, ddepth = -1, kernel = kernelSharp)
 	Gblurred = cv2.GaussianBlur(sharpened,(3,3),0)
 	denoised = cv2.fastNlMeansDenoising(Gblurred,None,5,7,21)
+	
+	#cv2.imshow("sh",sharpened)
+	#cv2.imshow("blur",Gblurred)
+	cv2.imshow("denoised",denoised)
 	
 	
 	#denoised = cv2.fastNlMeansDenoising(I,None,5,7,21)
@@ -120,8 +131,15 @@ while (video.isOpened()):
 	#dilation = cv2.dilate(F3,kernel2)
 	#dilation2 = cv2.dilate(erosion,element)
 	
+	erosion2 = cv2.erode(denoised,element)
+	
 	dilation = cv2.dilate(denoised,element)
 	erosion = cv2.erode(dilation,element)
+	
+	
+	cv2.imshow("no dilation",erosion2)
+	cv2.imshow("dilat",dilation)
+	cv2.imshow("erosion",erosion)
 	
 	
 	#cv2.imshow("imageSharpBlur", F2)
@@ -142,7 +160,7 @@ while (video.isOpened()):
 	
 	output = cv2.cvtColor(erosion, cv2.COLOR_GRAY2BGR)
 	
-	out.write(output)
+	#out.write(output)
 	
 	key = cv2.waitKey(1)
 
@@ -151,9 +169,9 @@ while (video.isOpened()):
 		break
 
 video.release()
-out.release()
+#out.release()
 
-#cv2.waitKey(0)
+cv2.waitKey(0)
 
 
 

@@ -21,11 +21,13 @@ import easygui
 
 #Capturing an image from a webcam:
 kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
-kernel2 = np.ones((3,3),np.uint8)
-element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+kernel2 = np.ones((5,5),np.uint8)
+element = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
+element2 = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
 
 # Tiling is important for correct contrast mappings
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+clahe2 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4,4))
 
 video = cv2.VideoCapture("../../Zorro.mp4")
 (grabbed, I) = video.read()
@@ -74,7 +76,6 @@ while (video.isOpened()):
 	
 	cv2.imshow("gray",I)
 	
-	
 	# NEED TO GET THE MASK FROM THE ORIGINAL IMAGE
 	# COMPARE ONE FRAME TO ANOTHER
 	# SOMEHOW
@@ -82,11 +83,11 @@ while (video.isOpened()):
 	
 	cla = clahe.apply(I)
 	
-	denoised3 = cv2.fastNlMeansDenoising(I,None,5,7,21)
-	cla2 = clahe.apply(denoised3)
-	cv2.imshow("cla2",cla2)
+	#denoised3 = cv2.fastNlMeansDenoising(I,None,5,7,21)
+	#cla2 = clahe.apply(denoised3)
+	#cv2.imshow("cla2",cla2)
 	
-	cv2.imshow("cla",cla)
+	#cv2.imshow("cla",cla)
 	
 	#merge_mertens = cv2.createMergeMertens()
 	#res_mertens = merge_mertens.process(cla)
@@ -94,19 +95,80 @@ while (video.isOpened()):
 	
 	#cla2 = clahe.apply(F)
 	#I2 = cv2.fastNlMeansDenoisingColored(I,None,5,5,7,21) 
+
+	dilcla2 = cv2.dilate(I,element)
+	erdcla2 = cv2.erode(dilcla2,element)
+	cla2 = clahe.apply(erdcla2)
+	
+	E = cv2.dilate(I,element2)
+	erdcla3 = cv2.erode(E,element)
+	dilcla3 = cv2.dilate(erdcla3,element2)
+	
+	dencla = cv2.fastNlMeansDenoising(dilcla3,None,3,3,9)
+	#cla3 = clahe.apply(dencla)
+
+	cv2.imshow("dencla",dencla)
+	
+	denoised3 = cv2.fastNlMeansDenoising(dencla,None,3,3,9)
+	sharpenedblt = cv2.filter2D(denoised3, ddepth = -1, kernel = kernelSharp)
+	Gblurredblt = cv2.GaussianBlur(sharpenedblt,(3,3),0)
+
+	Gblurredblt2 = cv2.GaussianBlur(denoised3,(3,3),0)
+	shblt = cv2.filter2D(Gblurredblt2, ddepth = -1, kernel = kernelSharp)
+	
+	
+	#cv2.imshow("sharpenedblt",sharpenedblt)
+	
+	
+	## This is without usage of any contrast fixes
+	# Still need to try out largely black areas
+	D = cv2.dilate(sharpenedblt,element2)
+	EE = cv2.erode(D,element)
+	DD = cv2.dilate(EE,element2)
+	cal4 = cv2.GaussianBlur(DD,(3,3),0)
+	cla4 = cv2.fastNlMeansDenoising(cal4,None,8,7,21)
+	
+	
+	#cv2.imshow("D",D)
+	#cv2.imshow("DD",DD)
+	cv2.imshow("cla4",cla4)
+
+	
+	
+	
+	
+	'''
+	
+	dencla
+	denoised2 / sharpened
+	
+	
+	'''
+	
+	
 	
 	denoised2 = cv2.fastNlMeansDenoising(cla,None,5,7,21)
-	cv2.imshow("denoised2",denoised2)
+	Gblurred = cv2.GaussianBlur(denoised2,(3,3),0)
+	sharpened = cv2.filter2D(Gblurred, ddepth = -1, kernel = kernelSharp)
+	
+	#cv2.imshow("postcla",denoised2)
+	cv2.imshow("sharp",sharpened)
+	
+	
+	#sharpened2 = cv2.filter2D(denoised2, ddepth = -1, kernel = kernelSharp)
+	#Gblurred2 = cv2.GaussianBlur(sharpened2,(3,3),0)
+	
+	#cv2.imshow("blr2",Gblurred2)
 	
 	# CHANGED THIS FROM DOING A 
 	# BLUR, THEN DENOISE, THEN SHARPENING
-	sharpened = cv2.filter2D(cla, ddepth = -1, kernel = kernelSharp)
-	Gblurred = cv2.GaussianBlur(sharpened,(3,3),0)
-	denoised = cv2.fastNlMeansDenoising(Gblurred,None,5,7,21)
+	#sharpened = cv2.filter2D(cla, ddepth = -1, kernel = kernelSharp)
+	#Gblurred = cv2.GaussianBlur(sharpened,(3,3),0)
+	#denoised = cv2.fastNlMeansDenoising(Gblurred,None,5,7,21)
 	
 	#cv2.imshow("sh",sharpened)
 	#cv2.imshow("blur",Gblurred)
-	cv2.imshow("denoised",denoised)
+	#cv2.imshow("denoised",denoised)
 	
 	
 	#denoised = cv2.fastNlMeansDenoising(I,None,5,7,21)
@@ -131,15 +193,15 @@ while (video.isOpened()):
 	#dilation = cv2.dilate(F3,kernel2)
 	#dilation2 = cv2.dilate(erosion,element)
 	
-	erosion2 = cv2.erode(denoised,element)
+	#erosion2 = cv2.erode(sharpened,element)
 	
-	dilation = cv2.dilate(denoised,element)
-	erosion = cv2.erode(dilation,element)
-	
-	
-	cv2.imshow("no dilation",erosion2)
-	cv2.imshow("dilat",dilation)
-	cv2.imshow("erosion",erosion)
+	#dilation = cv2.dilate(sharpened,element)
+	#erosion = cv2.erode(dilation,element)
+
+	# UNCOMMENT LATER
+	#cv2.imshow("no dilation",erosion2)
+	#cv2.imshow("dilat",dilation)
+	#cv2.imshow("erosion",erosion)
 	
 	
 	#cv2.imshow("imageSharpBlur", F2)
@@ -156,9 +218,9 @@ while (video.isOpened()):
 	#cv2.imshow("imageSharpCLA", Fcla)	
 	#cv2.imshow("erosion", erosion)
 	#cv2.imshow("dilation", dilation)
-	#cv2.imshow("both", dilation2)
+	#cv2.imshow("rubberchickenlook", erosion4)
 	
-	output = cv2.cvtColor(erosion, cv2.COLOR_GRAY2BGR)
+	output = cv2.cvtColor(cla4, cv2.COLOR_GRAY2BGR)
 	
 	#out.write(output)
 	

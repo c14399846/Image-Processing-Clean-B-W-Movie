@@ -154,7 +154,7 @@ cv2.waitKey(0)
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-newVideo = cv2.VideoWriter('ZorroMasking.wmv',fourcc, 24.0, (854,480))
+newVideo = cv2.VideoWriter('ZorroMaskingNoCol.wmv',fourcc, 24.0, (854,480))
 
 
 while (video.isOpened()):
@@ -201,8 +201,8 @@ while (video.isOpened()):
 	
 	
 	
-	out = simplest_cb(I, 1)
-	
+	#out = simplest_cb(I, 1)
+	out = I
 	
 	# Width is now 638
 	#cropped = I[0:480, 108:746]

@@ -2,6 +2,7 @@
 # (C) OLEG PETCOV
 
 # import the necessary packages:
+import math
 import numpy as np
 import cv2
 import imutils
@@ -22,6 +23,8 @@ import easygui
 #Capturing an image from a webcam:
 kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
 kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
+
+kernelSharpTest = np.array( [[ 0, -1, 0], [ -1, 4, -1], [ 0, -1, 0]], dtype = float)
 
 kernel2 = np.ones((5,5),np.uint8)
 element = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
@@ -46,9 +49,113 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 height, width, _ = I.shape
 
 
+
+
+
+
+
+def apply_mask(matrix, mask, fill_value):
+    masked = np.ma.array(matrix, mask=mask, fill_value=fill_value)
+    return masked.filled()
+
+def apply_threshold(matrix, low_value, high_value):
+    low_mask = matrix < low_value
+    matrix = apply_mask(matrix, low_mask, low_value)
+
+    high_mask = matrix > high_value
+    matrix = apply_mask(matrix, high_mask, high_value)
+
+    return matrix
+
+def simplest_cb(img, percent):
+    assert img.shape[2] == 3
+    assert percent > 0 and percent < 100
+
+    half_percent = percent / 200.0
+
+    channels = cv2.split(img)
+
+    out_channels = []
+    for channel in channels:
+        assert len(channel.shape) == 2
+        # find the low and high precentile values (based on the input percentile)
+        height, width = channel.shape
+        vec_size = width * height
+        flat = channel.reshape(vec_size)
+
+        assert len(flat.shape) == 1
+
+        flat = np.sort(flat)
+
+        n_cols = flat.shape[0]
+
+        low_val  = flat[math.floor(n_cols * half_percent)]
+        high_val = flat[math.ceil( n_cols * (1.0 - half_percent))]
+
+        #print ("Lowval: ", low_val)
+        #print ("Highval: ", high_val)
+
+        # saturate below the low percentile and above the high percentile
+        thresholded = apply_threshold(channel, low_val, high_val)
+        # scale the channel
+        normalized = cv2.normalize(thresholded, thresholded.copy(), 0, 255, cv2.NORM_MINMAX)
+        out_channels.append(normalized)
+
+    return cv2.merge(out_channels)
+
+
+
+	
+	
+###################################
+#Inpainting
+video.set(1,1)
+(grabbed, I) = video.read()	
+I = cv2.cvtColor(I,cv2.COLOR_BGR2GRAY)
+ret, mask = cv2.threshold(I, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+mask_inv = cv2.bitwise_not(mask)
+
+#cv2.imshow("mask",mask)
+#cv2.imshow("maskI",I)
+#cv2.imshow("maskinv",mask_inv)
+
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('Zorro08NovSharp.wmv',fourcc, 30.0, (854,480))
+inpaintTEMP = cv2.VideoWriter('ZorroTEMP.wmv',fourcc, 24.0, (854,480))
+
+
+while (grabbed):
+
+	fr+=1
+	strfr = str(fr)
+	
+	print (strfr + "\n")
+
+	(grabbed, I) = video.read()	
+	
+	print (grabbed)
+	
+	if grabbed is not False:
+		dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
+		
+		#dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+		
+		
+		#output = cv2.cvtColor(cla4, cv2.COLOR_GRAY2BGR)
+		
+		inpaintTEMP.write(dst)
+
+print ("DONE\n")
+video.release()
+video = cv2.VideoCapture("ZorroTEMP.wmv")
+(grabbed, I) = video.read()	
+
+cv2.waitKey(0)
+
+#fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+newVideo = cv2.VideoWriter('ZorroMasking.wmv',fourcc, 24.0, (854,480))
+
 
 while (video.isOpened()):
 	
@@ -59,20 +166,56 @@ while (video.isOpened()):
 	
 	# Hard sets the frame to frame 114
 	# Nicer for testing purposes
-	video.set(1,114)
+	#video.set(1,114)
 	#video.set(1,103)
 	
 	(grabbed, I) = video.read()	
+
+	'''
+	dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
+	
+	dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+	'''
+	
+	#cv2.imshow("dst",dst)
+	
+	#cv2.waitKey(0)
+	
+	
+	
+	# THIS CORRECTS COLOUR
+	#####################
+	## NOTE
+	#### THIS IS NOT MY CODE
+	#
+	# Created by : David YKay
+	# https://gist.github.com/DavidYKay
+	# https://gist.github.com/DavidYKay/9dad6c4ab0d8d7dbf3dc
+	#
+	#
+	########################
+	
+	
+	
+	
+	
+	
+	
+	out = simplest_cb(I, 1)
+	
 	
 	# Width is now 638
 	#cropped = I[0:480, 108:746]
 	
 	#cropped = cv2.resize(cropped,None,854, 480, interpolation = cv2.INTER_CUBIC)
 	
+	
+	
+	
 	# THIS IS VERY IMPORTANT FOR PERFORMANCE
 	# THE zorro.mp4 IS NORMALLY TREATED AS COLOUR IMAGE,
 	# WHICH IS SLOWER TO LOAD*************
-	I = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
+	out = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
 	#I = clahe.apply(I)
 	
 	#cv2.imshow("gray",I)
@@ -101,21 +244,75 @@ while (video.isOpened()):
 	#erdcla2 = cv2.erode(dilcla2,element)
 	#cla2 = clahe.apply(erdcla2)
 	
-	d = cv2.filter2D(I, ddepth = -1, kernel = kernelSharp)
+	
+	# THIS ONE IS BETTER
+	'''
+	why?
+		Compare the Laplacian of I and dencla
+		
+		They have different contours, I has more 'edgy' contours.
+		More sqaured in nature, so bilateral here would be best.
+	
+		Particularly when doing a sharpen and denoise at later stages.
+		Less detail will be lost.
+	
+	'''
+	
+	bil = cv2.bilateralFilter(out, 7, 75, 75)
+	d = cv2.filter2D(bil, ddepth = -1, kernel = kernelSharp)
+	#cv2.imshow("d",d)
+	
+	#cv2.imshow("bil",bil)
+	
+	'''
+	bil = cv2.bilateralFilter(I, 7, 75, 75)
+	laplacianB = cv2.Laplacian(bil,cv2.CV_64F)
+	cv2.imshow("lapBil",laplacianB)
+	
+	laplacianI = cv2.Laplacian(I,cv2.CV_64F)
+	
+	#I2 = cv2.addWeighted(I,1,bil,1,0)
+	#I2 = I - laplacianB
+	
+	#cv2.imshow("I2",I2)
+	
+	#I3 = I - I2
+	
+	# I4 gets some useful results.....
+	I4 = cv2.subtract(I,bil)	
+	cv2.imshow("I4",I4)
+	
+	
+	
+	lapI4 = cv2.Laplacian(I4,cv2.CV_64F)
+	cv2.imshow("lapI4",lapI4)
+	
+	I5 = I - I4
+	cv2.imshow("I5",I5)
+	'''
+	
+	
+	
+	
+	# NEW ORDER TIHNG
+	# NOT BETTER
+	'''d = cv2.filter2D(I, ddepth = -1, kernel = kernelSharp)
 	cv2.imshow("d",d)
 	bil = cv2.bilateralFilter(d, 7, 75, 75)
-	cv2.imshow("bil",bil)
+	cv2.imshow("bil",bil)'''
 	
-	E = cv2.dilate(bil,element2)
+	
+	# CHANGE TO bil HERE
+	E = cv2.dilate(d,element2)
 	erdcla3 = cv2.erode(E,element)
 	dilcla3 = cv2.dilate(erdcla3,element2)
 	
 	
-	E2 = cv2.dilate(I,element2)
-	erdcla32 = cv2.erode(E2,element)
-	dilcla32 = cv2.dilate(erdcla32,element2)
+	#E2 = cv2.dilate(I,element2)
+	#erdcla32 = cv2.erode(E2,element)
+	#dilcla32 = cv2.dilate(erdcla32,element2)
 	
-	cv2.imshow("der",dilcla3)
+	#cv2.imshow("der",dilcla3)
 	#cv2.waitKey(0)
 	
 	########
@@ -134,8 +331,17 @@ while (video.isOpened()):
 	dencla = cv2.fastNlMeansDenoising(dilcla3,None,3,3,9)
 	#cla3 = clahe.apply(dencla)
 
+	#cv2.imshow("dencla", dencla)
+	
+	'''
+	laplacianF = cv2.Laplacian(dencla,cv2.CV_64F)
+	
 	cv2.imshow("den",dencla)
+	cv2.imshow("lapI",laplacianI)
+	cv2.imshow("lapF",laplacianF)
 	cv2.waitKey(0)
+	'''
+	
 	
 	
 	'''
@@ -165,7 +371,8 @@ while (video.isOpened()):
 	denoise = cv2.fastNlMeansDenoising(DD,None,8,7,21)
 	cla4 = cv2.GaussianBlur(denoise,(3,3),0)
 	#cla4 = cv2.fastNlMeansDenoising(blur,None,3,5,5)
-
+	
+	#cla4 = dencla
 	
 	#cla = clahe2.apply(cla4)
 	
@@ -263,7 +470,9 @@ while (video.isOpened()):
 	
 	#output = cv2.filter2D(output, ddepth = -1, kernel = kernelSharp)
 	
-	out.write(output)
+	#cv2.imshow("output", output)
+	
+	newVideo.write(output)
 	
 	key = cv2.waitKey(1)
 

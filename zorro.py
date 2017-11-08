@@ -21,13 +21,15 @@ import easygui
 
 #Capturing an image from a webcam:
 kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
+kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
+
 kernel2 = np.ones((5,5),np.uint8)
 element = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
 element2 = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
 
 # Tiling is important for correct contrast mappings
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-clahe2 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4,4))
+clahe2 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(6,6))
 
 video = cv2.VideoCapture("../../Zorro.mp4")
 (grabbed, I) = video.read()
@@ -46,7 +48,7 @@ height, width, _ = I.shape
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-#out = cv2.VideoWriter('ZorroErodedNewOrderUnCropped2.wmv',fourcc, 30.0, (854,480))
+out = cv2.VideoWriter('Zorro08NovSharp.wmv',fourcc, 30.0, (854,480))
 
 while (video.isOpened()):
 	
@@ -57,31 +59,30 @@ while (video.isOpened()):
 	
 	# Hard sets the frame to frame 114
 	# Nicer for testing purposes
-	#video.set(1,114)
-	video.set(1,103)
+	video.set(1,114)
+	#video.set(1,103)
 	
-	(grabbed, I) = video.read()
-	
-	
-	
+	(grabbed, I) = video.read()	
 	
 	# Width is now 638
 	#cropped = I[0:480, 108:746]
 	
+	#cropped = cv2.resize(cropped,None,854, 480, interpolation = cv2.INTER_CUBIC)
 	
 	# THIS IS VERY IMPORTANT FOR PERFORMANCE
 	# THE zorro.mp4 IS NORMALLY TREATED AS COLOUR IMAGE,
 	# WHICH IS SLOWER TO LOAD*************
 	I = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
+	#I = clahe.apply(I)
 	
-	cv2.imshow("gray",I)
+	#cv2.imshow("gray",I)
 	
 	# NEED TO GET THE MASK FROM THE ORIGINAL IMAGE
 	# COMPARE ONE FRAME TO ANOTHER
 	# SOMEHOW
 	# inpaint = cv2.inpaint(img,mask,3,cv2.INPAINT_TELEA)
 	
-	cla = clahe.apply(I)
+	#I = clahe.apply(I)
 	
 	#denoised3 = cv2.fastNlMeansDenoising(I,None,5,7,21)
 	#cla2 = clahe.apply(denoised3)
@@ -96,46 +97,82 @@ while (video.isOpened()):
 	#cla2 = clahe.apply(F)
 	#I2 = cv2.fastNlMeansDenoisingColored(I,None,5,5,7,21) 
 
-	dilcla2 = cv2.dilate(I,element)
-	erdcla2 = cv2.erode(dilcla2,element)
-	cla2 = clahe.apply(erdcla2)
+	#dilcla2 = cv2.dilate(I,element)
+	#erdcla2 = cv2.erode(dilcla2,element)
+	#cla2 = clahe.apply(erdcla2)
 	
-	E = cv2.dilate(I,element2)
+	d = cv2.filter2D(I, ddepth = -1, kernel = kernelSharp)
+	cv2.imshow("d",d)
+	bil = cv2.bilateralFilter(d, 7, 75, 75)
+	cv2.imshow("bil",bil)
+	
+	E = cv2.dilate(bil,element2)
 	erdcla3 = cv2.erode(E,element)
 	dilcla3 = cv2.dilate(erdcla3,element2)
 	
+	
+	E2 = cv2.dilate(I,element2)
+	erdcla32 = cv2.erode(E2,element)
+	dilcla32 = cv2.dilate(erdcla32,element2)
+	
+	cv2.imshow("der",dilcla3)
+	#cv2.waitKey(0)
+	
+	########
+	#dilcla3 = cv2.filter2D(dilcla3, ddepth = -1, kernel = kernelVerySharp) 
+	# TESTING Sharpening
+	#dilcla3 = cv2.medianBlur(dilcla3,5) # TestZorro
+	#dilcla3 = cv2.bilateralFilter(dilcla3,9,75,75) # TESTZorro2
+	#dilcla3 = cv2.fastNlMeansDenoising(dilcla3,None,3,3,9)# TESTZorro3
+	# TEST****************************************************************
+	# CONTRAST STUFF HERE
+	#dilcla3 = clahe.apply(dilcla3)
+	
+	#dilcla3 = cv2.bilateralFilter(dilcla3, 7, 75, 75)
+	
+	#Original
 	dencla = cv2.fastNlMeansDenoising(dilcla3,None,3,3,9)
 	#cla3 = clahe.apply(dencla)
 
-	cv2.imshow("dencla",dencla)
+	cv2.imshow("den",dencla)
+	cv2.waitKey(0)
 	
-	denoised3 = cv2.fastNlMeansDenoising(dencla,None,3,3,9)
-	sharpenedblt = cv2.filter2D(denoised3, ddepth = -1, kernel = kernelSharp)
-	Gblurredblt = cv2.GaussianBlur(sharpenedblt,(3,3),0)
+	
+	'''
+		No longer using clahe for this run, removed the post-denoise
+	'''
 
-	Gblurredblt2 = cv2.GaussianBlur(denoised3,(3,3),0)
-	shblt = cv2.filter2D(Gblurredblt2, ddepth = -1, kernel = kernelSharp)
 	
+	#denoised3 = cv2.fastNlMeansDenoising(dencla,None,3,3,9)
+	sharpenedblt = cv2.filter2D(dencla, ddepth = -1, kernel = kernelSharp)
+	#Gblurredblt = cv2.GaussianBlur(sharpenedblt,(3,3),0)
+
+	#Gblurredblt2 = cv2.GaussianBlur(denoised3,(3,3),0)
+	#shblt = cv2.filter2D(Gblurredblt2, ddepth = -1, kernel = kernelSharp)
+
 	
 	#cv2.imshow("sharpenedblt",sharpenedblt)
 	
 	
 	## This is without usage of any contrast fixes
 	# Still need to try out largely black areas
+	
 	D = cv2.dilate(sharpenedblt,element2)
 	EE = cv2.erode(D,element)
 	DD = cv2.dilate(EE,element2)
-	cal4 = cv2.GaussianBlur(DD,(3,3),0)
-	cla4 = cv2.fastNlMeansDenoising(cal4,None,8,7,21)
+
 	
+	denoise = cv2.fastNlMeansDenoising(DD,None,8,7,21)
+	cla4 = cv2.GaussianBlur(denoise,(3,3),0)
+	#cla4 = cv2.fastNlMeansDenoising(blur,None,3,5,5)
+
+	
+	#cla = clahe2.apply(cla4)
 	
 	#cv2.imshow("D",D)
 	#cv2.imshow("DD",DD)
-	cv2.imshow("cla4",cla4)
-
-	
-	
-	
+	#cv2.imshow("cla4",cla4)
+	#cv2.imshow("cla",cla)
 	
 	'''
 	
@@ -146,6 +183,8 @@ while (video.isOpened()):
 	'''
 	
 	
+	# ADD ME LATER
+	'''
 	
 	denoised2 = cv2.fastNlMeansDenoising(cla,None,5,7,21)
 	Gblurred = cv2.GaussianBlur(denoised2,(3,3),0)
@@ -153,7 +192,7 @@ while (video.isOpened()):
 	
 	#cv2.imshow("postcla",denoised2)
 	cv2.imshow("sharp",sharpened)
-	
+	'''
 	
 	#sharpened2 = cv2.filter2D(denoised2, ddepth = -1, kernel = kernelSharp)
 	#Gblurred2 = cv2.GaussianBlur(sharpened2,(3,3),0)
@@ -222,7 +261,9 @@ while (video.isOpened()):
 	
 	output = cv2.cvtColor(cla4, cv2.COLOR_GRAY2BGR)
 	
-	#out.write(output)
+	#output = cv2.filter2D(output, ddepth = -1, kernel = kernelSharp)
+	
+	out.write(output)
 	
 	key = cv2.waitKey(1)
 
@@ -231,7 +272,7 @@ while (video.isOpened()):
 		break
 
 video.release()
-#out.release()
+out.release()
 
 cv2.waitKey(0)
 

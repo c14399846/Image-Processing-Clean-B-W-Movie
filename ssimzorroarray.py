@@ -69,6 +69,9 @@ def compare_images(imageA, imageB, framenum):
 	m = mse(imageA, imageB)
 	s = ssim(imageA, imageB)
 
+	array.append([framenum,m,s])
+	
+	'''
 	print ("WAITING")
 	
 	
@@ -82,7 +85,10 @@ def compare_images(imageA, imageB, framenum):
 	print (s)
 	print ("\n")
 	print("******************\n")
-	cv2.waitKey(0)
+	'''
+	
+	
+	#cv2.waitKey(0)
 	
 	'''
 	if ( (m < ) and (s < )):
@@ -182,8 +188,10 @@ frametest = i
 #video.set(0,frametest)
 video.release()
 
-if i < framecount:
-	print ("GREATER")
+
+
+array = []
+
 
 '''
 #while (Image_queue):
@@ -213,7 +221,7 @@ if i < framecount:
 while (i < framecount):
 
 	
-	print (str(i))
+	#print (str(i))
 	
 	# frame1
 	fr = frametest
@@ -245,10 +253,10 @@ while (i < framecount):
 	
 	compare_images(out,out2, frametest)
 	
-	cv2.imshow("I", out)
-	cv2.imshow("I2", out2)
+	#cv2.imshow("I", out)
+	#cv2.imshow("I2", out2)
 	
-	cv2.waitKey(0)
+	#cv2.waitKey(0)
 
 	
 	'''
@@ -294,10 +302,21 @@ while (i < framecount):
 #video.release()
 #newVideo.release()
 
+for x in range(5):
+	f = array[x][0]
+	m = array[x][1]
+	s = array[x][2]
+	
+	print (f)
+	print (m)
+	print (s)
+	
+
+
 end = time.time()
 print(end - start)
 
-#cv2.waitKey(0)
+cv2.waitKey(0)
 
 
 

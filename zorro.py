@@ -200,8 +200,6 @@ while (grabbed):
 	# ************************ REMOVED THIS
 	(grabbed, I) = video.read()	
 
-	#if grabbed is False:
-	#	break
 	'''
 	dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
 	
@@ -211,6 +209,9 @@ while (grabbed):
 	#cv2.imshow("dst",dst)
 	
 	#cv2.waitKey(0)
+	
+	if grabbed is False:
+		break
 	
 	
 	

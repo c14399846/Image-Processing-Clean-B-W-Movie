@@ -9,6 +9,10 @@ import imutils
 from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
+from collections import deque
+import time
+
+
 
 # Opening an image from a file:
 #I = cv2.imread("colours.jpg")
@@ -108,57 +112,81 @@ def simplest_cb(img, percent):
 	
 	
 ###################################
-#Inpainting
-video.set(1,1)
+# Inpainting
+# Uses first frame
+video.set(0,0)
 (grabbed, I) = video.read()	
 I = cv2.cvtColor(I,cv2.COLOR_BGR2GRAY)
-ret, mask = cv2.threshold(I, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+
+# Thresh is better clarity here, rather than 0 
+ret, mask = cv2.threshold(I, thresh = 20, maxval = 255, type = cv2.THRESH_BINARY_INV)
+
 mask_inv = cv2.bitwise_not(mask)
+
 
 #cv2.imshow("mask",mask)
 #cv2.imshow("maskI",I)
 #cv2.imshow("maskinv",mask_inv)
 
-#fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-inpaintTEMP = cv2.VideoWriter('ZorroTEMP.wmv',fourcc, 24.0, (854,480))
+#fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#inpaintTEMP = cv2.VideoWriter('ZorroTEMP.wmv',fourcc, 24.0, (854,480))
 
+#Image_data = []
+#Image_queue = deque()
 
+start = time.time()
+
+'''
 while (grabbed):
 
-	fr+=1
-	strfr = str(fr)
-	
-	print (strfr + "\n")
+	#fr+=1
+	#strfr = str(fr)
+	#print (strfr + "\n")
 
 	(grabbed, I) = video.read()	
 	
-	print (grabbed)
+	#print (grabbed)
 	
 	if grabbed is not False:
 		dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
-		
+		gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 		#dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
 		
 		
 		#output = cv2.cvtColor(cla4, cv2.COLOR_GRAY2BGR)
-		
-		inpaintTEMP.write(dst)
+		Image_queue.append(gray)
+		#Image_data.append (gray)
+		#inpaintTEMP.write(dst)
+'''
+#print ("DONE\n")
+#end = time.time()
+#print(end - start)
 
-print ("DONE\n")
-video.release()
-video = cv2.VideoCapture("ZorroTEMP.wmv")
-(grabbed, I) = video.read()	
-
-cv2.waitKey(0)
+#video.release()
+#video = cv2.VideoCapture("ZorroTEMP.wmv")
+#(grabbed, I) = video.read()	
+#cv2.waitKey(0)
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-newVideo = cv2.VideoWriter('ZorroMaskingNoCol.wmv',fourcc, 24.0, (854,480))
+newVideo = cv2.VideoWriter('ZorroNOMASK.avi',fourcc, 24.0, (854,480))
+
+'''
+list(im.getdata())
+
+for pixel in iter(im.getdata()):
+    print pixel
+'''
+#Image_data
+#i = 1
+#framecount = len(Image_data) - 1
 
 
-while (video.isOpened()):
-	
+video.set(0,0)
+#while (i < framecount):
+#while (Image_queue):
+while (grabbed):
+	#i += 1
 	#fr += 1
 	#frtxt = str(fr)
 	
@@ -169,8 +197,11 @@ while (video.isOpened()):
 	#video.set(1,114)
 	#video.set(1,103)
 	
+	# ************************ REMOVED THIS
 	(grabbed, I) = video.read()	
 
+	#if grabbed is False:
+	#	break
 	'''
 	dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
 	
@@ -195,27 +226,20 @@ while (video.isOpened()):
 	#
 	########################
 	
-	
-	
-	
-	
-	
-	
 	#out = simplest_cb(I, 1)
-	out = I
+	#out = Image_data[i]
+	#out = Image_queue.popleft()
 	
 	# Width is now 638
 	#cropped = I[0:480, 108:746]
 	
 	#cropped = cv2.resize(cropped,None,854, 480, interpolation = cv2.INTER_CUBIC)
 	
-	
-	
-	
+	#***************************************REMOVED THIS
 	# THIS IS VERY IMPORTANT FOR PERFORMANCE
 	# THE zorro.mp4 IS NORMALLY TREATED AS COLOUR IMAGE,
 	# WHICH IS SLOWER TO LOAD*************
-	out = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
+	out = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
 	#I = clahe.apply(I)
 	
 	#cv2.imshow("gray",I)
@@ -257,6 +281,8 @@ while (video.isOpened()):
 		Less detail will be lost.
 	
 	'''
+	
+	out = cv2.inpaint(out,mask_inv,1,cv2.INPAINT_TELEA)
 	
 	bil = cv2.bilateralFilter(out, 7, 75, 75)
 	d = cv2.filter2D(bil, ddepth = -1, kernel = kernelSharp)
@@ -480,10 +506,13 @@ while (video.isOpened()):
 	if key == ord("q"):
 		break
 
-video.release()
-out.release()
+#video.release()
+newVideo.release()
 
-cv2.waitKey(0)
+end = time.time()
+print(end - start)
+
+#cv2.waitKey(0)
 
 
 

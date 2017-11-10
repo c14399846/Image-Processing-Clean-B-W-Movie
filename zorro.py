@@ -169,7 +169,7 @@ while (grabbed):
 
 #fourcc = cv2.VideoWriter_fourcc('D','I','V','X')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-newVideo = cv2.VideoWriter('ZorroNOMASK.avi',fourcc, 24.0, (854,480))
+newVideo = cv2.VideoWriter('ZorroWTF.avi',fourcc, 24.0, (854,480))
 
 '''
 list(im.getdata())

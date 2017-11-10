@@ -14,7 +14,11 @@ import time
 
 #from skimage.measure import structural_similarity as ssim
 from skimage.measure import compare_ssim as ssim
+import peakutils
 
+#from peakdetect import peakdetect #https://blog.ytotech.com/2015/11/01/findpeaks-in-python/
+
+from scipy.signal import find_peaks_cwt
 
 #Capturing an image from a webcam:
 kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
@@ -112,14 +116,14 @@ def compare_images(imageA, imageB, framenum):
 ###################################
 # Inpainting
 # Uses first frame
-#video.set(0,0)
-#(grabbed, I) = video.read()	
-#I = cv2.cvtColor(I,cv2.COLOR_BGR2GRAY)
+video.set(0,0)
+(grabbed, I) = video.read()	
+I = cv2.cvtColor(I,cv2.COLOR_BGR2GRAY)
 
 # Thresh is better clarity here, rather than 0 
-#ret, mask = cv2.threshold(I, thresh = 20, maxval = 255, type = cv2.THRESH_BINARY_INV)
+ret, mask = cv2.threshold(I, thresh = 20, maxval = 255, type = cv2.THRESH_BINARY_INV)
 
-#mask_inv = cv2.bitwise_not(mask)
+mask_inv = cv2.bitwise_not(mask)
 
 
 #cv2.imshow("mask",mask)
@@ -148,8 +152,8 @@ while (grabbed):
 	#print (grabbed)
 	
 	if grabbed is not False:
-		#dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
-		gray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
+		dst = cv2.inpaint(I,mask_inv,1,cv2.INPAINT_TELEA)
+		gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 		#dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
 		
 		#output = cv2.cvtColor(cla4, cv2.COLOR_GRAY2BGR)
@@ -177,7 +181,7 @@ for pixel in iter(im.getdata()):
     print pixel
 '''
 #Image_data
-i = 248
+i = 0
 framecount = len(Image_data) - 1
 print(str(framecount))
 
@@ -299,127 +303,77 @@ while (i < framecount):
 	if key == ord("q"):
 		break
 
+print("FINISHED SSIM\n")
 #video.release()
 #newVideo.release()
 
-for x in range(5):
-	f = array[x][0]
+#diffArr = np.diff(array[:,1])
+
+arrS = []
+arrM = []
+for x in range(framecount):
+	#f = array[x][0]
 	m = array[x][1]
 	s = array[x][2]
+	#m = diffArr[x][1]
+	#print("\nDiff:" + str(diffArr[x]))
 	
+	arrS.append(s)
+	arrM.append(m)
+	
+	
+	'''
 	print (f)
 	print (m)
 	print (s)
+	'''
+	# Gets difference in second row, the mean values
+	#diffArr = numpy.diff(a[:,1])
+	#a[:,1]
+
 	
-
-
+#peaks = peakdetect(arr, lookahead=100)
+#indexes = find_peaks_cwt(arr, np.arange(1, max(arr))) # Better for positive peaks
+	
+#indexes2 = peakutils.indexes(arr, thres=0.02/max(arr), min_dist=100)	
+	
 end = time.time()
 print(end - start)
 
-cv2.waitKey(0)
+plt.plot(arrS)
+#plt.ylabel('some numbers')
+plt.show()
+#plt.axis([0, framecount, 0, max(arr)])
+
+plt.plot(arrM)
+#plt.ylabel('some numbers')
+plt.show()
+
+#fps = 0
+#fpscount = 0
+#fpsaxis = []
+'''
+for y in range(framecount):
+	
+	
+	if fps == 24:
+		fps = 0
+		
+		fpsaxis.append(fpscount/24)
+	
+	if y == (framecount - 1):
+		if fps < 24:
+			fpsaxis.append(fpscount+1)
+	
+	fps + 1
+	fpscount + 1
+'''
+#plt.xticks(arr, fpsaxis, rotation='horizontal')
+#plt.set_xticks(x1)
+#plt.set_xticklabels(squad, minor=False, rotation=45)
 
 
+	
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Writing an image:
-# cv2.imwrite("image.jpg",I)
-
-# Showing an image on the screen (OpenCV):
-#cv2.imshow("LMAO", I)
-#key = cv2.waitKey(0)
-
-# Showing an image on the screen (MatPlotLib):
-# I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
-# plt.imshow(I) 
-# plt.show() 
-
-# Converting to different colour spaces:
-#RGB = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
-#HSV = cv2.cvtColor(I, cv2.COLOR_BGR2HSV)
-#YUV = cv2.cvtColor(I, cv2.COLOR_BGR2YUV)
-# G = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
-
-#cv2.imshow("LMAORGB", RGB)
-#cv2.imshow("LMAOHSV", HSV)
-#cv2.imshow("LMAOYUV", YUV)
-#key = cv2.waitKey(0)
-
-# Keeping a copy:
-# Original = I.copy() 
-
-# # Drawing a line:
-# cv2.line(img = I, pt1 = (200,200), pt2 = (500,600), color = (255,255,255), thickness = 5) 
-
-# # Drawing a circle:
-# cv2.circle(img = I, center = (800,400), radius = 50, color = (0,0,255), thickness = -1)
-
-# # Drawing a rectangle:
-# cv2.rectangle(img = I, pt1 = (500,100), pt2 = (800,300), color = (255,0,255), thickness = 10)
-
-# # Accessing a pixel's value:
-# B = I[400,800,0]
-# BGR = I[400,800]
-# print B
-# print BGR
-
-# Setting a pixel's value:
-# I[400,800,0] = 255
-# cv2.imshow("image", I)
-# key = cv2.waitKey(0)
-
-# I[400,800] = (255,0,0)
-# cv2.imshow("image", I)
-# key = cv2.waitKey(0)
-
-# Using the colon operator:
-# I[390:410,790:810] = (255,0,0)
-# cv2.imshow("image", I)
-# key = cv2.waitKey(0)
-
-# I[:,:,2] = 0
-# cv2.imshow("image", I)
-# key = cv2.waitKey(0)
-
-# Capturing user input:
-# def draw(event,x,y,flags,param): 
-	# if event == cv2.EVENT_LBUTTONDOWN: 
-		# cv2.circle(img = I, center = (x,y),radius = 5, color = (255,255,255), thickness = -1) 
-		# cv2.imshow("image", I) 
-			
-# cv2.namedWindow("image") 
-# cv2.setMouseCallback("image", draw) 
-# cv2.imshow("image", I)
-# key = cv2.waitKey(0)
-
-# A handy way to use the waitkey....
-
-# while True:
-	# cv2.imshow("image", I)
-	# key = cv2.waitKey(0)
-
-	# # if the 'r' key is pressed, reset the image:
-	# if key == ord("r"):
-		# I = Original.copy()
-
-	# # if the 'q' key is pressed, quit:
-	# elif key == ord("q"):
-		# break
-
+#cv2.waitKey(0)
